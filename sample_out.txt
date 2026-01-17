@@ -1,0 +1,47 @@
+The output of: pwd : is
+>>>>>>>>>>>>>>>
+/home/faculty/rehmanh/CIS3110/Assignments/A01/Prep
+<<<<<<<<<<<<<<<
+The output of: ls -l -a -F : is
+>>>>>>>>>>>>>>>
+total 117
+drwxr-xr-x 2 rehmanh sessional     9 Jan 12 19:37 ./
+drwxr-xr-x 3 rehmanh sessional     3 Jan 12 18:46 ../
+-rwxr-xr-x 1 rehmanh sessional 21704 Jan 12 19:36 Assignment_1*
+-rw-r--r-- 1 rehmanh sessional   774 Jan 12 19:34 how_to_run.txt
+-rw-r--r-- 1 rehmanh sessional   153 Jan 12 19:18 makefile
+-rw-r--r-- 1 rehmanh sessional   157 Jan 12 19:18 outputFunction.txt
+-rw-r--r-- 1 rehmanh sessional    49 Jan 12 19:18 sample_in.txt
+-rw-r--r-- 1 rehmanh sessional     0 Jan 12 19:37 sample_out.txt
+-rw-r--r-- 1 rehmanh sessional  2133 Jan 12 19:27 sampleSol_a01.c
+<<<<<<<<<<<<<<<
+The output of: ps : is
+>>>>>>>>>>>>>>>
+    PID TTY          TIME CMD
+ 260447 pts/0    00:00:00 bash
+ 264930 pts/0    00:00:00 Assignment_1
+ 264933 pts/0    00:00:00 ps
+<<<<<<<<<<<<<<<
+The output of: pwd -L -P : is
+>>>>>>>>>>>>>>>
+/home/faculty/rehmanh/CIS3110/Assignments/A01/Prep
+<<<<<<<<<<<<<<<
+The output of: ls : is
+>>>>>>>>>>>>>>>
+Assignment_1
+how_to_run.txt
+makefile
+outputFunction.txt
+sample_in.txt
+sample_out.txt
+sampleSol_a01.c
+<<<<<<<<<<<<<<<
+The output of: cat makefile : is
+>>>>>>>>>>>>>>>
+# Do not edit the contents of this file.
+warnings_BAD: *.c
+	gcc -Werror -Wall -g -std=gnu99 -o Assignment_1 *.c -lrt
+	
+clean: *.c
+	rm Assignment_1
+<<<<<<<<<<<<<<<

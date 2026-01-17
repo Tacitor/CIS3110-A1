@@ -1,0 +1,62 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Thumbnails
+._.DS_Store
+Thumbs.db
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+
+# Build artifacts
+c/build/
+c/bin/
+c/lib/
+c/obj/
+
+# Build artifacts placed in lib/ should be ignored,
+# but ship the prebuilt reference libraries.
+# Ignore everything in c/lib
+c/lib/*
+
+# But allow the directory itself
+!c/lib/
+
+# And allow the two shipped binaries
+!c/lib/libgraph-linux-amd64.so
+!c/lib/libgraph-linux-arm64.so
+
+
+# Test artifacts
+*.log
+*.out
+*.tmp
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# GitLab CI token-based clone URLs (just in case)
+*.token
+
+
+
+# Temporary files
+*.bak
+*.orig
