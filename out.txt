@@ -1,0 +1,11 @@
+File is 49 bytes
+Read 49 chars
+
+====FILE START====
+pwd
+ls -l -a -F
+ps
+pwd -L -P
+ls
+cat makefile
+====EOF====
