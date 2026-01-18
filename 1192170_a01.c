@@ -81,6 +81,8 @@ int main(int argc, char **argv) {
     //TODO: Loop through this string and check each line ends with a LF. Ensure there is an EOF too. Or use the inputFileSize to find the end if no EOF.
     //TODO: Don't need EOF since the file is in a char array now. The string is null terminated.
 
+    //TODO: Move all this string splitting and arg formatting stuff into own function
+
     //Always start with one line since the first line doesn't have a LF before it.
     //Only exception is a blank file but there won't be any commands to run there anyway.
     int numLines = 1;
@@ -91,10 +93,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("numLines: %d\n", numLines);
     int validCharPerLine[numLines];
-    char* splitCMDS[numLines];
+    int spacesPerLine[numLines];
+    char* intermediateSplitCMDS[numLines];
     memset(validCharPerLine, 0, sizeof(validCharPerLine));
+    memset(spacesPerLine, 0, sizeof(spacesPerLine));
 
     //reset numLines to 0 now to use as an index
     numLines = 0;
@@ -105,11 +108,26 @@ int main(int argc, char **argv) {
         // Do include spaces (0x20) still since they will need to be used later to split the line into args
         if (cmds[i] >= VALID_CHAR_LO && cmds[i] <= VALID_CHAR_HI) {
             validCharPerLine[numLines]++;
+
+            //keep a seperate tally of the spaces
+            if (cmds[i] == ' ') {
+                spacesPerLine[numLines]++;
+            } 
         } else if (cmds[i] == 10) {
             numLines++;
         }
     }
 
+    // For each line keep track of how many char are in each arg delimited by spaces
+    int *charsPerArg[numLines];
+
+    for (int i = 0; i <= numLines; i++) {
+        // Add one more for fencepost problem reasons
+        charsPerArg[i] = calloc((spacesPerLine[i] + 1), sizeof(int));
+    }
+
+    int validCharLastSpace;
+    int argNum;
     int charNum = 0;
     int lineLen = 0;
     //Read each line into its own string
@@ -117,26 +135,41 @@ int main(int argc, char **argv) {
 
         //make array of validCharPerLine[i] + 1. This has validCharPerLine[i] chars and 1 null on the end
         lineLen = validCharPerLine[i] + 1;
-        splitCMDS[i] = malloc(sizeof(char) * (lineLen)); //get string of length validCharPerLine[i] + 1
+        intermediateSplitCMDS[i] = malloc(sizeof(char) * (lineLen)); //get string of length validCharPerLine[i] + 1
+
+        //Reset for every new line
+        argNum = validCharLastSpace = 0;
 
         for (int j = 0; j < validCharPerLine[i]; j++) {
-            splitCMDS[i][j] = cmds[charNum++]; //TODO: This assumes the first char is valid. Add a check for that I guess.
+            intermediateSplitCMDS[i][j] = cmds[charNum]; //TODO: This assumes the first char is valid. Add a check for that I guess.
+
+            if (cmds[charNum] == ' ') {
+                charsPerArg[i][argNum++] = j - validCharLastSpace;
+
+                validCharLastSpace = j + 1; // Add 1 more to j to skip the space itself
+            }
 
             //advance past the non valid chars
-            while (!(cmds[charNum] >= VALID_CHAR_LO && cmds[charNum] <= VALID_CHAR_HI)) { //TODO: This ONLY WORKS if the check here for a valid char is the same as above. Therfore turn this check into a function.
+            do { //TODO: This ONLY WORKS if the check here for a valid char is the same as above. Therfore turn this check into a function.
                 charNum++;
             }
+            while (!(cmds[charNum] >= VALID_CHAR_LO && cmds[charNum] <= VALID_CHAR_HI));
         }
 
+        //account for arg after last space (or only one if there is no space)
+        charsPerArg[i][argNum] = validCharPerLine[i] - validCharLastSpace;
+
         //terminate new string
-        splitCMDS[i][lineLen-1] = '\0';
+        intermediateSplitCMDS[i][lineLen-1] = '\0';
     }
 
     for (int i = 0; i <= numLines; i++) {
-        printf("%d: %s\n", i+1, splitCMDS[i]);
+        for (int j = 0; j <= spacesPerLine[i]; j++) {
+            printf("[%d][%d] = %d\n", i, j, charsPerArg[i][j]);
+        }
     }
 
-    printf("%s\n", splitCMDS[3]);
+
 
 
 
@@ -186,5 +219,11 @@ int main(int argc, char **argv) {
     //waitpid();
 
     free(cmds);
+
+    for (int i = 0; i <= numLines; i++) {
+        free(intermediateSplitCMDS[i]);
+        free(charsPerArg[i]);
+    }
+
     return 0;
 }
