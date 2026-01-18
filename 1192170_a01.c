@@ -9,6 +9,46 @@ void writeOutput(char* command, char* output)
 	printf(">>>>>>>>>>>>>>>\n%s<<<<<<<<<<<<<<<\n", output);
 }
 
+int loadFile(char *inputFilePath, FILE *inputFile, char **cmdsPTR) {
+    // Set up file for reading
+    long inputFileSize;
+    int returnSuccess;
+
+    // Guarding for opening the input file. Causes early return and program termination.
+    if (inputFile == NULL) {
+        printf("ERROR: Could not open file %s. Program Terminating.\n", inputFilePath);
+        return 1;
+    }
+
+    returnSuccess = fseek(inputFile, 0, SEEK_END);
+
+    // Guarding for moving file pointer to end of file so its size can be found. Causes early return and program termination.
+    if (returnSuccess !=0 ) {
+        printf("ERROR: Could not seek to end of %s. Program Terminating.\n", inputFilePath);
+        return 1;
+    }
+
+    inputFileSize = ftell(inputFile);
+    // Guarding for moving file pointer back to the start of file so can now be read into mem. Causes early return and program termination.
+    returnSuccess = fseek(inputFile, 0, SEEK_SET);
+    
+    if (returnSuccess !=0 ) {
+        printf("ERROR: Could not seek back to start of %s. Program Terminating.\n", inputFilePath);
+        return 1;
+    }
+
+    printf("File is %ld bytes\n", inputFileSize); //TODO: remove this
+    *cmdsPTR = malloc((inputFileSize + 1) * sizeof(char));
+
+    size_t elmtRead = fread(*cmdsPTR, sizeof(char), inputFileSize, inputFile);
+
+    fclose(inputFile);
+    printf("Read %lu chars\n", elmtRead); //TODO: remove this
+    //TODO: Make a comparison from inputFileSize to elmtRead. Ensure data types make sense. Terminate if can't read whole file.
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
 
     // Guarding for CLI args. Causes early return and program termination.
@@ -20,47 +60,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Set up file for reading
-    char *inputFilePath = argv[1];
+    FILE *inputFile = fopen(argv[1], "r");
     char *cmds; //where commands go. Needs to be dynamically allocated once # of bytes/chars in file is known.
-    long inputFileSize;
-    int returnSuccess;
 
-    FILE *inputFile = fopen(inputFilePath, "r");
-    // Guarding for opening the input file. Causes early return and program termination.
-    if (inputFile == NULL) {
-        printf("ERROR: Could not open file %s. Program Terminating.\n", inputFilePath);
-        return 1;
+    int returnSuccess = loadFile(argv[1], inputFile, &cmds);
+
+    if (returnSuccess) {
+        return returnSuccess;
     }
-
-    returnSuccess = fseek(inputFile, 0, SEEK_END);
-    // Guarding for moving file pointer to end of file so its size can be found. Causes early return and program termination.
-    if (returnSuccess !=0 ) {
-        printf("ERROR: Could not seek to end of %s. Program Terminating.\n", inputFilePath);
-        return 1;
-    }
-
-    inputFileSize = ftell(inputFile);
-    // Guarding for moving file pointer back to the start of file so can now be read into mem. Causes early return and program termination.
-    returnSuccess = fseek(inputFile, 0, SEEK_SET);
-    if (returnSuccess !=0 ) {
-        printf("ERROR: Could not seek back to start of %s. Program Terminating.\n", inputFilePath);
-        return 1;
-    }
-
-    //printf("File is %ld bytes\n", inputFileSize); //TODO: remove this
-    cmds = malloc((inputFileSize + 1) * sizeof(char));
-
-    size_t elmtRead = fread(cmds, sizeof(char), inputFileSize, inputFile);
-    elmtRead++; //TODO: Remove this silly line
-    elmtRead--; //TODO: Remove this silly line
-
-    fclose(inputFile);
-    //printf("Read %lu chars\n", elmtRead); //TODO: remove this
-    //TODO: Make a comparison from inputFileSize to elmtRead. Ensure data types make sense. Terminate if can't read whole file.
 
     //TODO: remove this
-    //printf("\n====FILE START====\n%s\n====EOF====\n", cmds);
+    printf("====FILE START====\n%s\n====EOF====\n", cmds);
 
     //TODO: break up mega string into lines for each command. Then a sperate string of each arggument
     //TODO: Each line ends with a CR LF. Use the LF to split into new lines.
@@ -88,26 +98,17 @@ int main(int argc, char **argv) {
 
         // Execule the command. This also effectivle terminated the child right at this point since the
         // process memory is swaped for that of the command. No need for a return.
-        execlp("ps", "ps", NULL);
+        execlp("cat", "cat", "makefile", NULL);
     }
 
     //Use the file descriptor to open the STDOUT of the child as a file in this parent
-    FILE *childOutFile = fdopen(pipeEnd[0], "r");
-    long childOutFileSize = 128; //TODO: stop hardcoding this and try reading the file until EOF is reached. Or try to find a way to seek to the end of the file.
+    long childOutFileSize = 16384; //TODO: Is there a better (dynamic) way to do this? Is there a better buffer size?
     char childOut[childOutFileSize + 1];
-    // Guarding for opening the output of the child file. Causes early return and program termination.
-    if (childOutFile == NULL) {
-        printf("ERROR: Could not read from pipe. Program Terminating.\n");
-        return 1;
-    }
-    
+
     //read from the file
-    fread(childOut, sizeof(char), childOutFileSize, childOutFile);
+    read(pipeEnd[0], childOut, childOutFileSize);    
     
-    printf("====FILE START====\n%s\n====EOF====\n", childOut); //TODO: remove this
-
-
-    fclose(childOutFile);
+    printf("====FILE START====\n%s====EOF====\n", childOut); //TODO: remove this
 
     // Close both ends of the pipe on the parent side
     close(pipeEnd[0]);
