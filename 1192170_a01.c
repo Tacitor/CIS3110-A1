@@ -226,33 +226,38 @@ int main(int argc, char **argv) {
 
         //The PID is 0 for the child process
         if (pid == 0) {
+            // Close read end of the pipe for the child side
+            close(pipeEnd[0]);
+
             // Take the standard out of this new child and point into into the write side of the pipe
             // This should also stop the output from showing in the terminal
             dup2(pipeEnd[1], STDOUT_FILENO);
-
-            // Close both ends of the pipe on the child side
-            close(pipeEnd[0]);
-            close(pipeEnd[1]);
 
             // Execule the command. This also effectivle terminated the child right at this point since the
             // process memory is swaped for that of the command. No need for a return.
             //Need the format of:
             //char* args[] = {"cat", "makefile", NULL};
             execvp(argsCmds[i][0], argsCmds[i]);
+
+            // This should never be called but it doesn't hurt to have it
+            close(pipeEnd[1]); // Close write end of the pipe for the child side
+            exit(EXIT_SUCCESS);
         }
+
+        // Close write end of the pipe for the parent side
+        close(pipeEnd[1]);
 
         //Use the file descriptor to open the STDOUT of the child as a file in this parent
         char childOut[CHILD_OUT_FILE_SIZE + 1] = {0};
 
         //read from the file
-        read(pipeEnd[0], childOut, CHILD_OUT_FILE_SIZE);    
+        read(pipeEnd[0], childOut, CHILD_OUT_FILE_SIZE);
 
         // Now with the output of the child from the pipe stored into a string it can be send to the output function
         writeOutput(linesCmds[i], childOut);
 
-        // Close both ends of the pipe on the parent side
+        // Close read end of the pipe for the parent side
         close(pipeEnd[0]);
-        close(pipeEnd[1]);
 
         int status;
         pid_t out = waitpid(pid, &status, 0);

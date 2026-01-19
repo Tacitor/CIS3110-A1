@@ -1,9 +1,12 @@
 pwd
 cat runValgrind.txt
 ls ../
+cd ..
+pwd
 echo "Hello World"
 uname
 whoami
 df
 top
+touch testTouch.txt
 pwd
