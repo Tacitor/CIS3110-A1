@@ -1,0 +1,9 @@
+pwd
+cat runValgrind.txt
+ls ../
+echo "Hello World"
+uname
+whoami
+df
+top
+pwd
