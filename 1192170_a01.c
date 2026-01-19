@@ -73,9 +73,6 @@ int main(int argc, char **argv) {
         return returnSuccess;
     }
 
-    //TODO: remove this
-    printf("====FILE START====\n%s\n====EOF====\n", allCmds);
-
     //TODO: Move all this string splitting and arg formatting stuff into own function
 
     //Always start with one line since the first line doesn't have a LF before it.
@@ -161,6 +158,9 @@ int main(int argc, char **argv) {
         linesCmds[i][lineLen-1] = '\0';
     }
 
+    // This single string of all commands is no longer needed and can be freed
+    free(allCmds);
+
     // Finally now each line can be broken up into its args
     // An array of an array of strings. The top level array is the line/command.
     // The middle level is the string that makes up an arg within a given line/command.
@@ -168,7 +168,9 @@ int main(int argc, char **argv) {
     char **argsCmds[numLines];
 
     for (int i = 0; i < numLines; i++) {
-        argsCmds[i] = malloc(sizeof(char*) * (spacesPerLine[i] + 1));
+        // Add on two more. The first extra char* is for fencepost reasons to get the last arg after the last space.
+        // The second extra char* is to have a NULL char* to make execvp() happy.
+        argsCmds[i] = malloc(sizeof(char*) * (spacesPerLine[i] + 2));
 
         charNum = 0;
 
@@ -185,6 +187,13 @@ int main(int argc, char **argv) {
             //add in terminator to new string
             argsCmds[i][j][charsPerArg[i][j]] = '\0';
         }
+
+        argsCmds[i][spacesPerLine[i] + 1] = NULL;
+    }
+
+    // This memory can now be released. Only linesCmds and argsCmds are needed from here on
+    for (int i = 0; i < numLines; i++) {
+        free(charsPerArg[i]);
     }
 
     for (int i = 0; i < numLines; i++) {
@@ -222,8 +231,9 @@ int main(int argc, char **argv) {
 
         // Execule the command. This also effectivle terminated the child right at this point since the
         // process memory is swaped for that of the command. No need for a return.
-        char* args[] = {"cat", "makefile", NULL};
-        execvp(args[0], args);
+        //Need the format of:
+        //char* args[] = {"cat", "makefile", NULL};
+        execvp(argsCmds[0][0], argsCmds[0]);
     }
 
     //Use the file descriptor to open the STDOUT of the child as a file in this parent
@@ -232,7 +242,7 @@ int main(int argc, char **argv) {
     //read from the file
     read(pipeEnd[0], childOut, CHILD_OUT_FILE_SIZE);    
     
-    printf("====FILE START====\n%s====EOF====\n", childOut); //TODO: remove this
+    printf("====PIPE START====\n%s====PIPE END====\n", childOut); //TODO: remove this
 
     // Close both ends of the pipe on the parent side
     close(pipeEnd[0]);
@@ -241,19 +251,15 @@ int main(int argc, char **argv) {
     //TODO: need waitpid?
     //waitpid();
 
-    free(allCmds);
-
+    // The final print is now done and this remaining memory can be freed.
     for (int i = 0; i < numLines; i++) {
         free(linesCmds[i]);
-        free(charsPerArg[i]);
 
         for (int j = 0; j < (spacesPerLine[i] + 1); j++) {
             free(argsCmds[i][j]);
         }
         free(argsCmds[i]);
     }
-
-    //TODO: Run this whole thing through valgrind
 
     return 0;
 }
