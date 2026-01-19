@@ -1,30 +1,55 @@
-File is 49 bytes
-Read 49 chars
-====FILE START====
-pwd
-ls -l -a -F
-ps
-pwd -L -P
-ls
-cat makefile
-====EOF====
-pwd
-ls
--l
--a
--F
-ps
-pwd
--L
--P
-ls
-cat
+The output of: pwd : is
+>>>>>>>>>>>>>>>
+/home/lukas/CIS3110-A1
+<<<<<<<<<<<<<<<
+The output of: ls -l -a -F : is
+>>>>>>>>>>>>>>>
+total 76
+drwxr-xr-x 3 lukas lukas  4096 Jan 18 22:12 ./
+drwx------ 8 lukas lukas  4096 Jan 18 19:44 ../
+-rw-r--r-- 1 lukas lukas  9834 Jan 18 22:12 1192170_a01.c
+-rwxr-xr-x 1 lukas lukas 22384 Jan 18 22:12 Assignment_1*
+drwxr-xr-x 8 lukas lukas  4096 Jan 18 20:38 .git/
+-rw-r--r-- 1 lukas lukas   740 Jan 17 09:57 .gitignore
+-rw-r--r-- 1 lukas lukas   775 Jan 17 09:50 how_to_run.txt
+-rw-r--r-- 1 lukas lukas   153 Jan 17 09:50 makefile
+-rw-r--r-- 1 lukas lukas   157 Jan 17 09:50 outputFunction.txt
+-rw-r--r-- 1 lukas lukas     0 Jan 18 22:12 out.txt
+-rw-r--r-- 1 lukas lukas    79 Jan 18 19:16 runValgrind.txt
+-rw-r--r-- 1 lukas lukas    49 Jan 18 17:27 sample_in.txt
+-rw-r--r-- 1 lukas lukas  1411 Jan 17 12:18 sample_out.txt
+<<<<<<<<<<<<<<<
+The output of: ps : is
+>>>>>>>>>>>>>>>
+    PID TTY          TIME CMD
+    329 pts/4    00:00:01 bash
+  69165 pts/4    00:00:00 Assignment_1
+  69166 pts/4    00:00:00 pwd
+  69167 pts/4    00:00:00 ls
+  69168 pts/4    00:00:00 ps
+<<<<<<<<<<<<<<<
+The output of: pwd -L -P : is
+>>>>>>>>>>>>>>>
+/home/lukas/CIS3110-A1
+<<<<<<<<<<<<<<<
+The output of: ls : is
+>>>>>>>>>>>>>>>
+1192170_a01.c
+Assignment_1
+how_to_run.txt
 makefile
-====FILE START====
+outputFunction.txt
+out.txt
+runValgrind.txt
+sample_in.txt
+sample_out.txt
+<<<<<<<<<<<<<<<
+The output of: cat makefile : is
+>>>>>>>>>>>>>>>
 # Do not edit the contents of this file.
 warnings_BAD: *.c
 	gcc -Werror -Wall -g -std=gnu99 -o Assignment_1 *.c -lrt
 	
 clean: *.c
 	rm Assignment_1
-====EOF====
+<<<<<<<<<<<<<<<
