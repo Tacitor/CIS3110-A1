@@ -1,0 +1,1 @@
+valgrind --leak-check=full -s --track-origins=yes ./Assignment_1 sample_in.txt

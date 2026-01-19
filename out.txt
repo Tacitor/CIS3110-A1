@@ -1,6 +1,5 @@
 File is 49 bytes
 Read 49 chars
-
 ====FILE START====
 pwd
 ls -l -a -F
@@ -8,4 +7,24 @@ ps
 pwd -L -P
 ls
 cat makefile
+====EOF====
+pwd
+ls
+-l
+-a
+-F
+ps
+pwd
+-L
+-P
+ls
+cat
+makefile
+====FILE START====
+# Do not edit the contents of this file.
+warnings_BAD: *.c
+	gcc -Werror -Wall -g -std=gnu99 -o Assignment_1 *.c -lrt
+	
+clean: *.c
+	rm Assignment_1
 ====EOF====

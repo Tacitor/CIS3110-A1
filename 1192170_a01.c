@@ -6,6 +6,7 @@
 
 #define VALID_CHAR_HI 0x7e
 #define VALID_CHAR_LO 0x20
+#define CHILD_OUT_FILE_SIZE 16384 //TODO: Is there a better (dynamic) way to do this? Is there a better buffer size?
 
 void writeOutput(char* command, char* output)
 {
@@ -40,7 +41,7 @@ int loadFile(char *inputFilePath, FILE *inputFile, char **cmdsPTR, long *size) {
     }
 
     printf("File is %ld bytes\n", *size); //TODO: remove this
-    *cmdsPTR = malloc((*size + 1) * sizeof(char));
+    *cmdsPTR = calloc((*size + 1), sizeof(char));
 
     size_t elmtRead = fread(*cmdsPTR, sizeof(char), *size, inputFile);
 
@@ -63,23 +64,17 @@ int main(int argc, char **argv) {
     }
 
     FILE *inputFile = fopen(argv[1], "r");
-    char *cmds; //where commands go. Needs to be dynamically allocated once # of bytes/chars in file is known.
+    char *allCmds = NULL; //where commands go. Needs to be dynamically allocated once # of bytes/chars in file is known.
     long inputFileSize;
 
-    int returnSuccess = loadFile(argv[1], inputFile, &cmds, &inputFileSize);
+    int returnSuccess = loadFile(argv[1], inputFile, &allCmds, &inputFileSize);
 
     if (returnSuccess) {
         return returnSuccess;
     }
 
     //TODO: remove this
-    printf("====FILE START====\n%s\n====EOF====\n", cmds);
-
-    //TODO: break up mega string into lines for each command. Then a sperate string of each arggument
-    //TODO: Each line ends with a CR LF. Use the LF to split into new lines.
-
-    //TODO: Loop through this string and check each line ends with a LF. Ensure there is an EOF too. Or use the inputFileSize to find the end if no EOF.
-    //TODO: Don't need EOF since the file is in a char array now. The string is null terminated.
+    printf("====FILE START====\n%s\n====EOF====\n", allCmds);
 
     //TODO: Move all this string splitting and arg formatting stuff into own function
 
@@ -88,14 +83,14 @@ int main(int argc, char **argv) {
     int numLines = 1;
     for (int i = 0; i <= inputFileSize; i++) {
         //Count the LF chars. No need to count CR chars since there will always be a LF, not always a CR.
-        if (cmds[i] == 10) {
+        if (allCmds[i] == 10) {
             numLines++;
         }
     }
 
     int validCharPerLine[numLines];
     int spacesPerLine[numLines];
-    char* intermediateSplitCMDS[numLines];
+    char* linesCmds[numLines];
     memset(validCharPerLine, 0, sizeof(validCharPerLine));
     memset(spacesPerLine, 0, sizeof(spacesPerLine));
 
@@ -106,22 +101,25 @@ int main(int argc, char **argv) {
         // Filter out control chars and spaces. When feeding into execlp() execvp() each string needs to have chars between
         // 0x21 (!) to 0x7e (~) (including both ends of range).
         // Do include spaces (0x20) still since they will need to be used later to split the line into args
-        if (cmds[i] >= VALID_CHAR_LO && cmds[i] <= VALID_CHAR_HI) {
+        if (allCmds[i] >= VALID_CHAR_LO && allCmds[i] <= VALID_CHAR_HI) {
             validCharPerLine[numLines]++;
 
             //keep a seperate tally of the spaces
-            if (cmds[i] == ' ') {
+            if (allCmds[i] == ' ') {
                 spacesPerLine[numLines]++;
             } 
-        } else if (cmds[i] == 10) {
+        } else if (allCmds[i] == 10) {
             numLines++;
         }
     }
 
+    // Add one back since it is done being an index and resumes its previous role of storing the number of lines.
+    numLines++;
+
     // For each line keep track of how many char are in each arg delimited by spaces
     int *charsPerArg[numLines];
 
-    for (int i = 0; i <= numLines; i++) {
+    for (int i = 0; i < numLines; i++) {
         // Add one more for fencepost problem reasons
         charsPerArg[i] = calloc((spacesPerLine[i] + 1), sizeof(int));
     }
@@ -131,19 +129,19 @@ int main(int argc, char **argv) {
     int charNum = 0;
     int lineLen = 0;
     //Read each line into its own string
-    for (int i = 0; i <= numLines; i++) {
+    for (int i = 0; i < numLines; i++) {
 
         //make array of validCharPerLine[i] + 1. This has validCharPerLine[i] chars and 1 null on the end
         lineLen = validCharPerLine[i] + 1;
-        intermediateSplitCMDS[i] = malloc(sizeof(char) * (lineLen)); //get string of length validCharPerLine[i] + 1
+        linesCmds[i] = malloc(sizeof(char) * (lineLen)); //get string of length validCharPerLine[i] + 1
 
         //Reset for every new line
         argNum = validCharLastSpace = 0;
 
         for (int j = 0; j < validCharPerLine[i]; j++) {
-            intermediateSplitCMDS[i][j] = cmds[charNum]; //TODO: This assumes the first char is valid. Add a check for that I guess.
+            linesCmds[i][j] = allCmds[charNum]; //TODO: This assumes the first char is valid. Add a check for that I guess.
 
-            if (cmds[charNum] == ' ') {
+            if (allCmds[charNum] == ' ') {
                 charsPerArg[i][argNum++] = j - validCharLastSpace;
 
                 validCharLastSpace = j + 1; // Add 1 more to j to skip the space itself
@@ -153,19 +151,45 @@ int main(int argc, char **argv) {
             do { //TODO: This ONLY WORKS if the check here for a valid char is the same as above. Therfore turn this check into a function.
                 charNum++;
             }
-            while (!(cmds[charNum] >= VALID_CHAR_LO && cmds[charNum] <= VALID_CHAR_HI));
+            while (charNum <= inputFileSize && !(allCmds[charNum] >= VALID_CHAR_LO && allCmds[charNum] <= VALID_CHAR_HI));
         }
 
         //account for arg after last space (or only one if there is no space)
         charsPerArg[i][argNum] = validCharPerLine[i] - validCharLastSpace;
 
         //terminate new string
-        intermediateSplitCMDS[i][lineLen-1] = '\0';
+        linesCmds[i][lineLen-1] = '\0';
     }
 
-    for (int i = 0; i <= numLines; i++) {
-        for (int j = 0; j <= spacesPerLine[i]; j++) {
-            printf("[%d][%d] = %d\n", i, j, charsPerArg[i][j]);
+    // Finally now each line can be broken up into its args
+    // An array of an array of strings. The top level array is the line/command.
+    // The middle level is the string that makes up an arg within a given line/command.
+    // The lowest level is the array of chars that is the string
+    char **argsCmds[numLines];
+
+    for (int i = 0; i < numLines; i++) {
+        argsCmds[i] = malloc(sizeof(char*) * (spacesPerLine[i] + 1));
+
+        charNum = 0;
+
+        for (int j = 0; j < (spacesPerLine[i] + 1); j++) {
+            argsCmds[i][j] = malloc(sizeof(char) * (charsPerArg[i][j] + 1)); //Add 1 to NULL terminate the string
+
+            for (int k = 0; k < charsPerArg[i][j]; k++) {
+                argsCmds[i][j][k] = linesCmds[i][charNum++];
+            }
+
+            //skip the space
+            charNum++;
+
+            //add in terminator to new string
+            argsCmds[i][j][charsPerArg[i][j]] = '\0';
+        }
+    }
+
+    for (int i = 0; i < numLines; i++) {
+        for (int j = 0; j < (spacesPerLine[i] + 1); j++) {
+            printf("%s\n", argsCmds[i][j]);
         }
     }
 
@@ -203,11 +227,10 @@ int main(int argc, char **argv) {
     }
 
     //Use the file descriptor to open the STDOUT of the child as a file in this parent
-    long childOutFileSize = 16384; //TODO: Is there a better (dynamic) way to do this? Is there a better buffer size?
-    char childOut[childOutFileSize + 1];
+    char childOut[CHILD_OUT_FILE_SIZE + 1] = {0};
 
     //read from the file
-    read(pipeEnd[0], childOut, childOutFileSize);    
+    read(pipeEnd[0], childOut, CHILD_OUT_FILE_SIZE);    
     
     printf("====FILE START====\n%s====EOF====\n", childOut); //TODO: remove this
 
@@ -218,12 +241,19 @@ int main(int argc, char **argv) {
     //TODO: need waitpid?
     //waitpid();
 
-    free(cmds);
+    free(allCmds);
 
-    for (int i = 0; i <= numLines; i++) {
-        free(intermediateSplitCMDS[i]);
+    for (int i = 0; i < numLines; i++) {
+        free(linesCmds[i]);
         free(charsPerArg[i]);
+
+        for (int j = 0; j < (spacesPerLine[i] + 1); j++) {
+            free(argsCmds[i][j]);
+        }
+        free(argsCmds[i]);
     }
+
+    //TODO: Run this whole thing through valgrind
 
     return 0;
 }
