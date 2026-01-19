@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/wait.h> //TODO: Is this needed?
 
 #define VALID_CHAR_HI 0x7e
 #define VALID_CHAR_LO 0x20
@@ -40,16 +39,20 @@ int loadFile(char *inputFilePath, FILE *inputFile, char **cmdsPTR, long *size) {
         return 1;
     }
 
-    printf("File is %ld bytes\n", *size); //TODO: remove this
     *cmdsPTR = calloc((*size + 1), sizeof(char));
-
     size_t elmtRead = fread(*cmdsPTR, sizeof(char), *size, inputFile);
-
     fclose(inputFile);
-    printf("Read %lu chars\n", elmtRead); //TODO: remove this
-    //TODO: Make a comparison from inputFileSize to elmtRead. Ensure data types make sense. Terminate if can't read whole file.
+
+    if (!(*size >= 0 && ((size_t)*size) == elmtRead)) {
+        printf("ERROR: Bad read from %s. Size read does not match size of file. Program Terminating.\n", inputFilePath);
+        return 1;
+    }
 
     return 0;
+}
+
+int isCharValid(char c) {
+    return (c >= VALID_CHAR_LO && c <= VALID_CHAR_HI);
 }
 
 int main(int argc, char **argv) {
@@ -73,7 +76,9 @@ int main(int argc, char **argv) {
         return returnSuccess;
     }
 
-    //TODO: Move all this string splitting and arg formatting stuff into own function
+    /**
+     * =-=-=-=Begin splitting of args=-=-=-=
+     */
 
     //Always start with one line since the first line doesn't have a LF before it.
     //Only exception is a blank file but there won't be any commands to run there anyway.
@@ -98,7 +103,7 @@ int main(int argc, char **argv) {
         // Filter out control chars and spaces. When feeding into execlp() execvp() each string needs to have chars between
         // 0x21 (!) to 0x7e (~) (including both ends of range).
         // Do include spaces (0x20) still since they will need to be used later to split the line into args
-        if (allCmds[i] >= VALID_CHAR_LO && allCmds[i] <= VALID_CHAR_HI) {
+        if (isCharValid(allCmds[i])) {
             validCharPerLine[numLines]++;
 
             //keep a seperate tally of the spaces
@@ -125,6 +130,12 @@ int main(int argc, char **argv) {
     int argNum;
     int charNum = 0;
     int lineLen = 0;
+
+    // Advance past the non valid chars if there are any
+    while (charNum <= inputFileSize && !isCharValid(allCmds[charNum])) {
+        charNum++;
+    }
+
     //Read each line into its own string
     for (int i = 0; i < numLines; i++) {
 
@@ -136,7 +147,7 @@ int main(int argc, char **argv) {
         argNum = validCharLastSpace = 0;
 
         for (int j = 0; j < validCharPerLine[i]; j++) {
-            linesCmds[i][j] = allCmds[charNum]; //TODO: This assumes the first char is valid. Add a check for that I guess.
+            linesCmds[i][j] = allCmds[charNum];
 
             if (allCmds[charNum] == ' ') {
                 charsPerArg[i][argNum++] = j - validCharLastSpace;
@@ -144,11 +155,11 @@ int main(int argc, char **argv) {
                 validCharLastSpace = j + 1; // Add 1 more to j to skip the space itself
             }
 
-            //advance past the non valid chars
-            do { //TODO: This ONLY WORKS if the check here for a valid char is the same as above. Therfore turn this check into a function.
+            // Advance one and keep going past the non valid chars
+            do {
                 charNum++;
             }
-            while (charNum <= inputFileSize && !(allCmds[charNum] >= VALID_CHAR_LO && allCmds[charNum] <= VALID_CHAR_HI));
+            while (charNum <= inputFileSize && !isCharValid(allCmds[charNum]));
         }
 
         //account for arg after last space (or only one if there is no space)
@@ -196,17 +207,16 @@ int main(int argc, char **argv) {
         free(charsPerArg[i]);
     }
 
+    //TODO: Remove this
     for (int i = 0; i < numLines; i++) {
         for (int j = 0; j < (spacesPerLine[i] + 1); j++) {
             printf("%s\n", argsCmds[i][j]);
         }
     }
 
-
-
-
-
-
+    /**       
+     * =-=-=-= End splitting of args =-=-=-=
+     */
 
     // Set up the pipe for sending the output of the child process back to the parent
     int pipeEnd[2];
@@ -248,7 +258,7 @@ int main(int argc, char **argv) {
     close(pipeEnd[0]);
     close(pipeEnd[1]);
     
-    //TODO: need waitpid?
+    //TODO: need waitpid? If yes: #include <sys/wait.h>
     //waitpid();
 
     // The final print is now done and this remaining memory can be freed.
