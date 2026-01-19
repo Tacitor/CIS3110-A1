@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #define VALID_CHAR_HI 0x7e
 #define VALID_CHAR_LO 0x20
@@ -221,7 +222,7 @@ int main(int argc, char **argv) {
         }
 
         //fork the process and save the PID so it can be compared
-        int pid = fork();
+        pid_t pid = fork();
 
         //The PID is 0 for the child process
         if (pid == 0) {
@@ -253,8 +254,16 @@ int main(int argc, char **argv) {
         close(pipeEnd[0]);
         close(pipeEnd[1]);
 
-        //TODO: need waitpid? If yes: #include <sys/wait.h>
-        //waitpid();
+        int status;
+        pid_t out = waitpid(pid, &status, 0);
+
+        if (out != pid) {
+            printf("ERROR: Wait condition failed for child PID %d for command %s\n", pid, linesCmds[i]);
+        } else if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            printf("ERROR: PID %d for command %s exited, status=%d\n", pid, linesCmds[i], WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("ERROR: PID %d for command %s KILLED by signal %d\n", pid, linesCmds[i], WTERMSIG(status));
+        }
     }
 
     // The final print is now done and this remaining memory can be freed.
