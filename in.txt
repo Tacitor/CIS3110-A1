@@ -1,12 +1,17 @@
 pwd
-cat runValgrind.txt
-ls ../
+clear
+pwd
+ls
+man pwd
+gcc -Werror -Wall -g -std=gnu99 -o DUMBY_OUT 1192170_a01.c -lrt
 cd ..
-pwd
-echo "Hello World"
-uname
-whoami
-df
-top
-touch testTouch.txt
-pwd
+touch DUMBY_TEST.TXT
+mkdir a
+mkdir b
+rmdir a
+cp runValgrind.txt runValgrind_2.txt
+cp runValgrind.txt runValgrind_3.txt
+cp runValgrind.txt runValgrind_4.txt
+rm runValgrind_2.txt
+mv runValgrind_4.txt runValgrind_5.txt
+sudo -h

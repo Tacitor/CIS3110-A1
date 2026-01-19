@@ -53,7 +53,10 @@ int loadFile(char *inputFilePath, FILE *inputFile, char **cmdsPTR, long *size) {
 }
 
 int isCharValid(char c) {
-    return (c >= VALID_CHAR_LO && c <= VALID_CHAR_HI);
+    // Other filter option is to use:
+    // The TA said not to worry about the char filter. The assignment is not looking at string and file parsing.
+    //(c >= VALID_CHAR_LO && c <= VALID_CHAR_HI)
+    return (c != (char)(10) && c != (char)(13));
 }
 
 int main(int argc, char **argv) {
